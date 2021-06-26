@@ -1,0 +1,165 @@
+[
+  {
+    "model": "core.eventtype",
+    "pk": 1,
+    "fields": {
+      "event_name": "check_in"
+    }
+  },
+  {
+    "model": "core.eventtype",
+    "pk": 2,
+    "fields": {
+      "event_name": "check_out"
+    }
+  },
+  {
+    "model": "core.statustype",
+    "pk": 1,
+    "fields": {
+      "code": "waiting",
+      "name": "\u0110ang ch\u1edd ph\u00ea duy\u1ec7t"
+    }
+  },
+  {
+    "model": "core.statustype",
+    "pk": 2,
+    "fields": {
+      "code": "accept",
+      "name": "\u0110\u1ed3ng \u00fd"
+    }
+  },
+  {
+    "model": "core.statustype",
+    "pk": 3,
+    "fields": {
+      "code": "decline",
+      "name": "T\u1eeb ch\u1ed1i"
+    }
+  },
+  {
+    "model": "core.statustype",
+    "pk": 4,
+    "fields": {
+      "code": "cancel",
+      "name": "H\u1ee7y"
+    }
+  },
+  {
+    "model": "core.reason",
+    "pk": 1,
+    "fields": {
+      "code": "invalid_area",
+      "name": "Ngo\u00e0i ph\u1ea1m vi"
+    }
+  },
+  {
+    "model": "core.reason",
+    "pk": 2,
+    "fields": {
+      "code": "invalid_forgot_check",
+      "name": "Qu\u00ean ch\u1ea5m c\u00f4ng"
+    }
+  },
+  {
+    "model": "core.reason",
+    "pk": 3,
+    "fields": {
+      "code": "invalid_working_time",
+      "name": "Ch\u01b0a l\u00e0m \u0111\u1ee7 gi\u1edd"
+    }
+  },
+  {
+    "model": "core.reason",
+    "pk": 4,
+    "fields": {
+      "code": "other",
+      "name": "Kh\u00e1c"
+    }
+  },
+  {
+    "model": "core.dayofftype",
+    "pk": 1,
+    "fields": {
+      "code": 0,
+      "name": "Ngh\u1ec9 kh\u00f4ng l\u01b0\u01a1ng"
+    }
+  },
+  {
+    "model": "core.dayofftype",
+    "pk": 2,
+    "fields": {
+      "code": 1,
+      "name": "Ngh\u1ec9 ph\u00e9p"
+    }
+  },
+  {
+    "model": "auths.role",
+    "pk": 1,
+    "fields": {
+      "name": "user"
+    }
+  },
+  {
+    "model": "auths.role",
+    "pk": 2,
+    "fields": {
+      "name": "manager"
+    }
+  },
+  {
+    "model": "auths.role",
+    "pk": 3,
+    "fields": {
+      "name": "bot"
+    }
+  },
+  {
+    "model": "auths.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$260000$mZSAz2wWppkdhKggKts5NN$zQVc/+BzJlymUDeGzk9dvGCdwWDBxV6XOJ32jhn2src=",
+      "last_login": "2020-08-20T14:18:53.312",
+      "is_superuser": true,
+      "username": "admin",
+      "first_name": "",
+      "last_name": "",
+      "is_staff": true,
+      "date_joined": "2020-08-08T23:53:17.337",
+      "email": "",
+      "full_name": "",
+      "manager": null,
+      "is_active": true,
+      "is_admin": false,
+      "total_dayOff": 12.0,
+      "groups": [],
+      "user_permissions": [],
+      "roles": []
+    }
+  },
+  {
+    "model": "auths.user",
+    "pk": 1001,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "bot",
+      "first_name": "",
+      "last_name": "",
+      "is_staff": false,
+      "date_joined": "2020-08-20T14:19:09",
+      "email": "bot@tsg.net.vn",
+      "full_name": "bot",
+      "manager": null,
+      "is_active": true,
+      "is_admin": false,
+      "total_dayOff": 12.0,
+      "groups": [],
+      "user_permissions": [],
+      "roles": [
+        3
+      ]
+    }
+  }
+]
