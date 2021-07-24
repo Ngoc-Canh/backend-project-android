@@ -1,4 +1,18 @@
+import datetime
+
 from ua_parser import user_agent_parser
+
+
+class Timer(object):
+    @classmethod
+    def get_today(cls):
+        today = datetime.datetime.today()
+        return today.strftime("%Y-%m-%d")
+
+    @classmethod
+    def get_timestamp_now(cls):
+        ts = datetime.datetime.now().timestamp()
+        return ts
 
 
 class Client(object):
@@ -23,6 +37,5 @@ class Client(object):
     @classmethod
     def get_client_info(cls, request):
         return {
-            'user_ip': cls.get_ip(request),
-            'user_platform': cls.get_platform(request)
+            'user_ip': cls.get_ip(request)
         }

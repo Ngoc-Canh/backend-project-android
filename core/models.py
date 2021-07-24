@@ -3,6 +3,8 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
+
+from app_common import Timer
 from auths.models import User
 
 
@@ -24,6 +26,40 @@ class Event(models.Model):
     created_date = models.DateField()
     user_ip = models.CharField(default="127.0.0.1", max_length=20)
     is_active = models.BooleanField(default=True)
+
+    @classmethod
+    def create_check_in(cls, **kwargs):
+        created_date = Timer.get_today() if 'created_date' not in kwargs else kwargs['created_date']
+        created_time = Timer.get_timestamp_now() if 'created_at' not in kwargs else kwargs['created_at']
+
+        check_in_event = EventType.objects.get(event_name=EventType.EVENTS[0][0])
+
+        try:
+            event = Event.objects.get(created_by=kwargs['created_by'], created_date=created_date,
+                                      event_type=check_in_event, is_active=True)
+        except models.ObjectDoesNotExist:
+            kwargs['created_date'] = created_date
+            kwargs['event_type'] = check_in_event
+            kwargs['created_at'] = created_time
+            event = Event.objects.create(**kwargs)
+        return event
+
+    @classmethod
+    def create_check_out(cls, **kwargs):
+        created_date = Timer.get_today() if 'created_date' not in kwargs else kwargs['created_date']
+        created_time = Timer.get_timestamp_now() if 'created_at' not in kwargs else kwargs['created_at']
+
+        check_out_event = EventType.objects.get(event_name=EventType.EVENTS[0][1])
+
+        try:
+            event = Event.objects.get(created_by=kwargs['created_by'], created_date=created_date,
+                                      event_type=check_out_event, is_active=True)
+        except models.ObjectDoesNotExist:
+            kwargs['created_date'] = created_date
+            kwargs['event_type'] = check_out_event
+            kwargs['created_at'] = created_time
+            event = Event.objects.create(**kwargs)
+        return event
 
 
 class StatusType(models.Model):
@@ -48,6 +84,7 @@ class Submission(models.Model):
     last_update = models.IntegerField()
     manager_confirm = models.ForeignKey(StatusType, on_delete=models.CASCADE, default=None, null=True, blank=True)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    another_reason = models.TextField()
     is_active = models.BooleanField(default=True)
 
 
