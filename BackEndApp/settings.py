@@ -40,7 +40,11 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'core',
-    'auths'
+    'auths',
+    'ApproveRequest',
+    'CheckInOut',
+    'DayOff',
+    'submission'
 ]
 
 REST_FRAMEWORK = {
