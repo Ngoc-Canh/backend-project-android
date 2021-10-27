@@ -81,7 +81,7 @@
     "model": "core.dayofftype",
     "pk": 1,
     "fields": {
-      "code": 0,
+      "code": "unpaid_leave",
       "name": "Ngh\u1ec9 kh\u00f4ng l\u01b0\u01a1ng"
     }
   },
@@ -89,7 +89,7 @@
     "model": "core.dayofftype",
     "pk": 2,
     "fields": {
-      "code": 1,
+      "code": "paid_leave",
       "name": "Ngh\u1ec9 ph\u00e9p"
     }
   },
@@ -149,7 +149,7 @@
       "last_name": "",
       "is_staff": false,
       "date_joined": "2020-08-20T14:19:09",
-      "email": "bot@tsg.net.vn",
+      "email": "bot@gmail.com",
       "full_name": "bot",
       "manager": null,
       "is_active": true,
