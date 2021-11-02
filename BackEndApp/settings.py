@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     'ApproveRequest',
     'CheckInOut',
     'DayOff',
-    'submission'
+    'submission',
+    'Holiday'
 ]
 
 REST_FRAMEWORK = {
