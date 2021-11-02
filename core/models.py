@@ -195,10 +195,18 @@ class Holiday(models.Model):
     @classmethod
     def create_holiday(cls, **kwargs):
         try:
-            holiday = Holiday.objects.create(**kwargs)
+            start_holiday = kwargs['startDate']
+            end_holiday = kwargs['endDate']
+            description = kwargs['title']
+            holiday = Holiday.objects.create(
+                start_holiday=start_holiday,
+                end_holiday=end_holiday,
+                description=description,
+                sum_day=kwargs["sum_day"]
+            )
             return holiday
         except Exception as e:
-            return e
+            raise e
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
