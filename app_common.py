@@ -1,5 +1,6 @@
 import datetime
 
+from django.db.models import Q
 from ua_parser import user_agent_parser
 
 import core.models
@@ -29,6 +30,29 @@ class Timer(object):
             if days.start_date <= event_time <= days.end_date:
                 return False
         return True
+
+    @classmethod
+    def is_day_off(cls, user, request_date):
+        dayOff = core.models.DayOff.objects.filter(
+            created_by=user & Q(
+                Q(start_holiday__month=request_date.month) | Q(end_holiday__month=request_date.month)) | Q(
+                Q(start_holiday__year=request_date.year) |
+                Q(end_holiday__year=request_date.year))).exclude(is_active=False)
+        for day_off in dayOff:
+            if day_off.start_date <= request_date <= day_off.end_date:
+                return True
+        return False
+
+    @classmethod
+    def is_holiday(cls, request_date):
+        holiday = core.models.Holiday.objects.filter(Q(Q(start_holiday__month=request_date.month) |
+                                                       Q(end_holiday__month=request_date.month)) |
+                                                     Q(Q(start_holiday__year=request_date.year) |
+                                                       Q(end_holiday__year=request_date.year)))
+        for hld in holiday:
+            if hld.start_holiday <= request_date <= hld.end_holiday:
+                return True
+        return False
 
 
 class Client(object):

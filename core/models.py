@@ -28,6 +28,9 @@ class Event(models.Model):
     user_ip = models.CharField(default="127.0.0.1", max_length=20)
     is_active = models.BooleanField(default=True)
 
+    def __str__(self):
+        return f"{self.created_by} - {self.created_date}"
+
     @classmethod
     def create_check_in(cls, **kwargs):
         created_date = Timer.get_today() if 'created_date' not in kwargs else kwargs['created_date']
@@ -137,6 +140,9 @@ class Submission(models.Model):
 
         return submission
 
+    def __str__(self):
+        return f"{self.event.created_by} - {self.event.created_date}"
+
 
 class DayOffType(models.Model):
     code = models.CharField(max_length=25)
@@ -160,6 +166,9 @@ class DayOff(models.Model):
     last_update = models.IntegerField()
     manager_confirm = models.ForeignKey(StatusType, on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.created_by}: {self.start_date}-{self.end_date}"
 
     @classmethod
     def create_day_off(cls, **kwargs):
