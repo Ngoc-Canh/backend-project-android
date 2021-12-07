@@ -15,40 +15,38 @@ from core.service.jobs_scheduler import job_daily
 class ValidateView(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self):
-        result = job_daily()
+    def get(self, request):
+        try:
+            result = job_daily()
+            return Response({"msg": result}, 200)
+        except Exception as e:
+            return Response({"msg": e}, 500)
 
-        return Response({"msg": result}, 200)
+
+class GetToken(APIView):
+
+    def post(self, request):
+        try:
+            user = request.user
+            return Response(user.email, 200)
+        except Exception:
+            Response({"msg": "Token not valid"}, 400)
 
 
 class SaveDeviceToken(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
-        token_device = request.data["token_device"]
+        try:
+            token_device = request.data["token_device"]
 
-        dict_token = {
-            request.user.email: {
-                "token_device": token_device
-            }
-        }
+            flag = request.user
+            flag.token_device = token_device
+            flag.save()
 
-        with open('device_token.json', 'r') as openfile:
-            listObj = json.load(openfile)
-
-        for lst in listObj:
-            if lst[f"{request.user.email}"]:
-                lst[f"{request.user.email}"].update({"token_device": f"{token_device}"})
-            else:
-                listObj.append(dict_token)
-
-        if not listObj:
-            listObj.append(dict_token)
-
-        with open("device_token.json", 'w') as json_file:
-            json.dump(listObj, json_file,
-                      indent=4,
-                      separators=(',', ': '))
+            return Response("Saved", 200)
+        except Exception as e:
+            return Response(e, 500)
 
 
 class GetEventView(APIView):
@@ -173,7 +171,7 @@ class HistoryView(APIView):
 
 
 class APIHoliday(APIView):
-    permission_class = (IsAuthenticated, )
+    permission_class = (IsAuthenticated,)
 
     def get(self, request):
         if request.user.is_admin:
@@ -188,7 +186,6 @@ class APIHoliday(APIView):
             return Response({'code': 200, 'status': 'OK', 'msg': 'Thêm mới thành công'})
         except Exception as e:
             return Response({"code": 500, "msg": f"{str(e)}"})
-
 
 
 def validate_ip(request):
@@ -219,17 +216,41 @@ def get_day_off_with_month(month, year, user):
 
     for df in DayOff.objects.filter(Q(start_date__month=month) & Q(start_date__year=year) |
                                     Q(end_date__month=month) & Q(end_date__year=year), is_active=True, created_by=user):
+        hour_start_for_start_date = int(get_type_from_ts(fmt="%H", ts=df.ts_start_for_start_date))
+        hour_end_for_start_date = int(get_type_from_ts(fmt="%H", ts=df.ts_end_for_start_date))
+
+        hour_start_for_end_date = int(get_type_from_ts(fmt="%H", ts=df.ts_start_for_end_date))
+        hour_end_for_end_date = int(get_type_from_ts(fmt="%H", ts=df.ts_end_for_end_date))
+
         if float(df.number_day_off).is_integer():
-            for days in range(0, int(df.number_day_off - 1)):
+            for days in range(0, ((df.end_date - df.start_date).days + 1)):
                 all_day = False
                 morning = False
                 afternoon = False
+                if days == 0:
+                    if hour_start_for_start_date + hour_end_for_start_date == 24:
+                        all_day = True
+                    elif hour_end_for_start_date == 12:
+                        morning = True
+                    elif hour_start_for_start_date == 13:
+                        afternoon = True
+
+                if days == (df.end_date - df.start_date).days:
+                    if hour_start_for_end_date + hour_end_for_end_date == 24:
+                        all_day = True
+                    elif hour_end_for_end_date == 12:
+                        morning = True
+                    elif hour_start_for_end_date == 13:
+                        afternoon = True
                 next_day = df.start_date + datetime.timedelta(days=days)
+                if next_day.weekday() == 5 or next_day.weekday() == 6:
+                    continue
                 ts = int(datetime.datetime(next_day.year, next_day.month, next_day.day).timestamp())
                 if ts_first_month <= ts <= ts_last_month:
-                    all_day = True
+                    # all_day = True
                     lst_result.append({"date": next_day, "all_day": all_day,
-                                       "morning": morning, "afternoon": afternoon, "type": df.type_off.name})
+                                       "morning": morning, "afternoon": afternoon, "type": df.type_off.first().name,
+                                       "status": df.manager_confirm.name})
         else:
             for days in range(0, int(df.number_day_off + 0.5)):
                 all_day = False
@@ -251,7 +272,8 @@ def get_day_off_with_month(month, year, user):
                             morning = True if not all_day else False
 
                         lst_result.append({"date": next_day, "all_day": all_day,
-                                           "morning": morning, "afternoon": afternoon, "type": df.type_off.name})
+                                           "morning": morning, "afternoon": afternoon, "type": df.type_off.first().name,
+                                           "status": df.manager_confirm.name})
                         continue
 
                     if days == int(df.number_day_off - 0.5):
@@ -267,12 +289,14 @@ def get_day_off_with_month(month, year, user):
                             morning = True if not all_day else False
 
                         lst_result.append({"date": next_day, "all_day": all_day,
-                                           "morning": morning, "afternoon": afternoon, "type": df.type_off.name})
+                                           "morning": morning, "afternoon": afternoon, "type": df.type_off.first().name,
+                                           "status": df.manager_confirm.name})
                         continue
 
                     all_day = True
                     lst_result.append({"date": next_day, "all_day": all_day,
-                                       "morning": morning, "afternoon": afternoon, "type": df.type_off.name})
+                                       "morning": morning, "afternoon": afternoon, "type": df.type_off.first().name,
+                                       "status": df.manager_confirm.name})
     return lst_result
 
 
@@ -297,7 +321,8 @@ def is_day_off(month, year):
                     if next_day == datetime.datetime.today().date():
                         if days == 0:
                             # Kiểm tra ngày đầu tiên có phải nửa ngày ko ?
-                            hour_start_for_start_date = int(get_type_from_ts(fmt="%H", ts=dayoff.ts_start_for_start_date))
+                            hour_start_for_start_date = int(
+                                get_type_from_ts(fmt="%H", ts=dayoff.ts_start_for_start_date))
                             hour_end_for_start_date = int(get_type_from_ts(fmt="%H", ts=dayoff.ts_end_for_start_date))
                             if hour_start_for_start_date <= hour_request <= hour_end_for_start_date:
                                 return True
@@ -313,73 +338,6 @@ def is_day_off(month, year):
                                 return False
                         return True
                     return False
-
-
-# def get_number_dayOff(ts1, ts2, ts3, ts4):
-#     start = get_type_from_ts("%Y/%m/%d/%H", ts1).split("/")
-#     end_of_start = get_type_from_ts("%Y/%m/%d/%H", ts2).split("/")
-#     end = get_type_from_ts("%Y/%m/%d/%H", ts3).split("/")
-#     end_of_end = get_type_from_ts("%Y/%m/%d/%H", ts4).split("/")
-#
-#     count = datetime.date(int(end[0]), int(end[1]), int(end[2])) - datetime.date(int(start[0]), int(start[1]),
-#                                                                                  int(start[2]))
-#     day = count.days + 1
-#
-#     if day == 1:
-#         if (start[3] == "01" and end_of_start[3] == "12") and (end[3] == "13" and end_of_end[3] == "23"):
-#             return day
-#         if start[3] == "01" and end_of_start[3] == "12":
-#             day = day - 0.5
-#         if start[3] == "13" and end_of_start[3] == "23":
-#             day = day - 0.5
-#         return day
-#     else:
-#         if start[3] == "01" and end_of_start == "12":
-#             day = day - 0.5
-#         if start[3] == "12" and end_of_start == "23":
-#             day = day - 0.5
-#
-#         if end[3] == "01" and end_of_end == "12":
-#             day = day - 0.5
-#         if end[3] == "12" and end_of_end == "23":
-#             day = day - 0.5
-#         return day
-
-
-# def get_number_day_off(ts_start, ts_end, calculate=False):
-#     start = get_type_from_ts("%Y/%m/%d/%H", ts_start).split("/")
-#     end = get_type_from_ts("%Y/%m/%d/%H", ts_end).split("/")
-#
-#     count = datetime.date(int(end[0]), int(end[1]), int(end[2])) - datetime.date(int(start[0]), int(start[1]), int(start[2]))
-#     day = count.days
-#
-#     if not calculate:
-#         if day == 1 and start[3] == "1" and end[3] == "23":
-#             return day
-#
-#         if start[3] == "12" or end[3] == "12":
-#             day = day - 0.5
-#
-#         return day
-#     else:
-#         if float(day).is_integer():
-#             return f"{ts_start}, {ts_start}, {ts_end}, {ts_end}"
-#         else:
-#             if start[3] == "12":
-#                 strDate = f"{start[0]}/{start[1]}/{start[2]} {start[3]}"
-#                 rs = datetime.datetime.strptime(strDate, "%Y/%m/%d %H")
-#                 ts1 = datetime.datetime.timestamp(rs)
-#             else:
-#                 ts1 = ts_start
-#
-#             if end[3] == "12":
-#                 strDate = f"{end[0]}/{end[1]}/{end[2]} {end[3]}"
-#                 rs = datetime.datetime.strptime(strDate, "%Y/%m/%d %H")
-#                 ts2 = datetime.datetime.timestamp(rs)
-#             else:
-#                 ts2 = ts_end
-#
-#             return f"{ts_start}, {ts1}, {ts_end}, {ts2}"
 
 
 def get_range_holidays(month, year):
@@ -417,5 +375,3 @@ def get_type_from_ts(fmt, ts):
     if ts > 1000000000000:
         ts /= 1000
     return datetime.datetime.fromtimestamp(ts).strftime(fmt)
-
-

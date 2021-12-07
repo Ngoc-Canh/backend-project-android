@@ -5,7 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import DayOff
+from app_common import Timer
+from core.models import DayOff, Event, Submission
 
 
 class ListDayOff(APIView):
@@ -38,11 +39,21 @@ class ListDayOff(APIView):
             start_date = parser.parse(data['start_date'])
             end_date = parser.parse(data['end_date'])
 
+            if Timer.is_holiday(start_date.date()) and Timer.is_holiday(end_date.date()):
+                return Response({"msg": "Không thể tạo yêu cầu nghỉ phép vào ngày lễ"})
+
+            event = Event.objects.filter(created_by=request.user, created_date__range=[start_date, end_date])
+            if event:
+                return Response({"msg": "Đã có sự kiện chấm công, không thể xin nghỉ."}, status=500)
+
             if number_day > request.user.total_dayOff:
-                return Response({'msg': "Số ngày phép của bạn còn lại không đủ."}, status=404)
+                return Response({'msg': "Số ngày phép của bạn còn lại không đủ."}, status=500)
 
             if start_date > end_date:
-                return Response({'msg': "Ngày kết thúc không thể lớn hơn ngày bắt đầu."}, status=404)
+                return Response({'msg': "Ngày kết thúc không thể lớn hơn ngày bắt đầu."}, status=500)
+
+            if start_date.month < datetime.datetime.now().month or end_date.month < datetime.datetime.now().month:
+                return Response({'msg': "Không thể tạo ngày nghỉ cho tháng trước."}, status=500)
 
             result = {
                 "number_day_off": number_day,
@@ -69,7 +80,7 @@ class ListDayOff(APIView):
     def delete(self, request, pk):
         try:
             dayoffs = DayOff.objects.get(id=pk, created_by=request.user)
-            if dayoffs:
+            if not dayoffs:
                 return Response({"msg": "Không tồn tại bản ghi."}, status=400)
 
             dayoffs.is_active = False
@@ -85,12 +96,23 @@ def get_number_dayOff(ts1, ts2, ts3, ts4):
     end = get_type_from_ts("%Y/%m/%d/%H", ts3).split("/")
     end_of_end = get_type_from_ts("%Y/%m/%d/%H", ts4).split("/")
 
-    count = datetime.date(int(end[0]), int(end[1]), int(end[2])) - datetime.date(int(start[0]), int(start[1]),
-                                                                                 int(start[2]))
-    day = count.days + 1
+    start_date = datetime.date(int(start[0]), int(start[1]), int(start[2]))
 
+    count = datetime.date(int(end[0]), int(end[1]), int(end[2])) - start_date
+
+    day = count.days + 1
+    flag = day
+    for n in range(0, day):
+        check = start_date + datetime.timedelta(n)
+        if check.weekday() == 5:
+            flag -= 1
+        if check.weekday() == 6:
+            flag -= 1
+    day = flag
     if day == 1:
         if (start[3] == "01" and end_of_start[3] == "12") and (end[3] == "13" and end_of_end[3] == "23"):
+            return day
+        if (start[3] == "01" and end_of_start[3] == "23") and (end[3] == "01" and end_of_end[3] == "23"):
             return day
         if start[3] == "01" and end_of_start[3] == "12":
             day = day - 0.5
@@ -98,14 +120,14 @@ def get_number_dayOff(ts1, ts2, ts3, ts4):
             day = day - 0.5
         return day
     else:
-        if start[3] == "01" and end_of_start == "12":
+        if start[3] == "01" and end_of_start[3] == "12":
             day = day - 0.5
-        if start[3] == "12" and end_of_start == "23":
+        if start[3] == "13" and end_of_start[3] == "23":
             day = day - 0.5
 
-        if end[3] == "01" and end_of_end == "12":
+        if end[3] == "01" and end_of_end[3] == "12":
             day = day - 0.5
-        if end[3] == "12" and end_of_end == "23":
+        if end[3] == "13" and end_of_end[3] == "23":
             day = day - 0.5
         return day
 

@@ -23,6 +23,7 @@ class User(AbstractUser):
     manager = models.ForeignKey('self', on_delete=models.CASCADE, default=None, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
+    token_device = models.TextField(null=True, blank=True, default=None)
     total_dayOff = models.FloatField(default=0)
 
     def is_administrator(self):

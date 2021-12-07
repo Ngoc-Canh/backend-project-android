@@ -1,3 +1,5 @@
+import datetime
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,7 +18,7 @@ class CheckInView(APIView):
             response_checkin = check_in_function(request.user, client_info)
             status_checkin = response_checkin.data['code']
             if status_checkin == 200:
-                return Response({"msg": response_checkin.data['msg']}, status=status_checkin)
+                return Response(CHECK_IN, status=status_checkin)
             else:
                 return Response({"msg": response_checkin.data['msg']}, status=status_checkin)
         except Exception as e:
@@ -32,7 +34,7 @@ class CheckOutView(APIView):
             response_checkin = check_out_function(request.user, client_info)
             status_checkout = response_checkin.data['code']
             if status_checkout == 200:
-                return Response({"msg": response_checkin.data['msg']}, status=status_checkout)
+                return Response(CHECK_OUT, status=status_checkout)
             else:
                 return Response({"msg": response_checkin.data['msg']}, status=status_checkout)
         except Exception as e:
@@ -41,13 +43,19 @@ class CheckOutView(APIView):
 
 def check_in_function(user, info):
     try:
+        if Timer.is_day_off(user, datetime.datetime.now().date()):
+            return Response({'code': 500, 'status': 'Error', 'msg': 'Không thể chấm công vào ngày nghỉ.'})
+
+        if Timer.is_holiday(datetime.datetime.now().date()):
+            return Response({'code': 500, 'status': 'Error', 'msg': 'Không thể chấm công vào ngày nghỉ lễ.'})
+
         event = Event.objects.filter(created_by=user, created_date=Timer.get_today(), is_active=True,
                                      event_type__event_name=CHECK_IN)
 
         if not event:
             info['created_by'] = user
             Event.create_check_in(**info)
-            return Response({'code': 200, 'status': 'OK', 'msg': 'Chấm công lúc đến thành công'})
+            return Response({'code': 200, 'status': 'OK', 'msg': 'Checkin thành công'})
         else:
             return Response({'code': 400, 'status': "Error", 'msg': "Đã Checkin. Không thể checkin lại. "})
     except Exception as e:
@@ -56,6 +64,12 @@ def check_in_function(user, info):
 
 def check_out_function(user, info):
     try:
+        if Timer.is_day_off(user, datetime.datetime.now().date()):
+            return Response({'code': 500, 'status': 'Error', 'msg': 'Không thể chấm công vào ngày nghỉ.'})
+
+        if Timer.is_holiday(datetime.datetime.now().date()):
+            return Response({'code': 500, 'status': 'Error', 'msg': 'Không thể chấm công vào ngày nghỉ lễ.'})
+
         event_filter = Event.objects.filter(created_by=user, created_date=Timer.get_today(),
                                             is_active=True)
 

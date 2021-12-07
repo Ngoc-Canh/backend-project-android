@@ -3,20 +3,14 @@ import json
 import requests
 
 from app_config import URL_NOTIFY, HEADER_NOTIFY, CHECK_OUT, CHECK_IN
+from auths.models import User
 
 
 def notify(data):
-    with open('device_token.json', 'r') as openfile:
-        listObj = json.load(openfile)
-
     for email, info in data.items():
-        try:
-            tokenDevice = [i[email]["token_device"] for i in listObj][0]
-        except:
-            break
-
-        if not tokenDevice:
-            break
+        user = User.objects.filter(email=email).first()
+        if not user.token_device:
+            continue
         message = ""
         for day, event in info.items():
             if event[CHECK_IN] and event[CHECK_OUT]:
@@ -28,11 +22,11 @@ def notify(data):
                 message = f"Bạn quên chấm công lúc về ngày {day}"
 
         body = {
-            "to": f"{tokenDevice}",
+            "to": f"{user.token_device}",
             "data": {
                 "title": "Quên chấm công",
                 "body": f"{message}"
             }
         }
         rs = requests.post(url=URL_NOTIFY, data=json.dumps(body), headers=HEADER_NOTIFY)
-        print(rs.status_code)
+        print(rs.content)

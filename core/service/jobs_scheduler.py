@@ -32,6 +32,11 @@ def apply_policy(current_date):
             try:
                 event_checkIn = user.event_set.get(event_type__event_name=CHECK_IN, created_date=current_date,
                                                    is_active=True)
+                dict_miss_event[user.email] = {
+                    day_str: {
+                        CHECK_IN: False
+                    }
+                }
             except:
                 event_checkIn = ""
                 dict_miss_event[user.email] = {
@@ -43,6 +48,10 @@ def apply_policy(current_date):
             try:
                 event_checkOut = user.event_set.get(event_type__event_name=CHECK_OUT, created_date=current_date,
                                                     is_active=True)
+
+                dict_miss_event[user.email][day_str].update({
+                    CHECK_OUT: False
+                })
             except:
                 event_checkOut = None
                 dict_miss_event[user.email][day_str].update({
@@ -84,7 +93,7 @@ def additional_day():
 
 def scheduler_job_in_week():
     scheduler = BackgroundScheduler()
-    scheduler.add_job(job_daily(), 'cron', year="*", month="*", day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(job_daily(), 'cron', year="*", month="*", hours=7, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
 
 

@@ -1,15 +1,17 @@
 import datetime
 
+from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from app_common import Timer
 from app_config import STATUS_WAITING, CHECK_OUT, CHECK_IN
-from core.models import Submission, Event
+from core.models import Submission, Event, DayOff, Holiday
 
 
 class ListSubmission(APIView):
-    permission_class = (IsAuthenticated, )
+    permission_class = (IsAuthenticated,)
 
     def get(self, request):
         submissions = Submission.objects.filter(is_active=True, event__created_by=request.user)
@@ -39,7 +41,7 @@ class ListSubmission(APIView):
             else:
                 return Response({"msg": result.data['msg']}, status=result.data['code'])
         except Exception as e:
-            return Response({'msg':  f"{str(e)}"}, status=400)
+            return Response({'msg': f"{str(e)}"}, status=400)
 
     def delete(self, request, pk):
         try:
@@ -67,17 +69,34 @@ def submission_function(user, data):
             "created_date": convert_date
         }
 
+        if Timer.is_holiday(convert_date):
+            return Response({'code': 500, 'status': "Error", 'msg': "Không thể tạo yêu cầu trùng ngày nghỉ lễ"})
+
+        if convert_date > Timer.get_time_now().date():
+            return Response({'code': 500, 'status': "Error", 'msg': "Không thể chấm bù cho tương lai"})
+
+        if convert_date.weekday() >= 5:
+            return Response({'code': 500, 'status': "Error", 'msg': "Không thể chấm công vào cuối tuần"})
+
+        if Timer.is_day_off(user, convert_date):
+            return Response({'code': 500, 'status': "Error", 'msg': "Không thể tạo yêu cầu chấm bù khi đang trong "
+                                                                    "ngày nghỉ"})
+
         event = Event.objects.filter(created_date=convert_date,
                                      created_by=user,
-                                     event_type__event_name=data['event_type'])
+                                     event_type__event_name=data['event_type'], is_active=True)
         if not event:
             if data['event_type'] == CHECK_OUT:
                 event = Event.create_check_out(**data_event)
             if data['event_type'] == CHECK_IN:
                 event = Event.create_check_in(**data_event)
 
-        data['event'] = event.first()
-        Submission.create_submission(**data)
+            data['event'] = event
+            Submission.create_submission(**data)
+        else:
+            return Response({'code': 500, 'status': "Error", 'msg': "Đã có sự kiện chấm công trước đó, "
+                                                                    "vui lòng kiểm tra lại"})
+
         return Response({'code': 200, 'status': 'OK', 'msg': 'Tạo mới thành công'})
     except Exception as e:
         return Response({'code': 500, 'status': "Error", 'msg': f'{str(e)}'})
